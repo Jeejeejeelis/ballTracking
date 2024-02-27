@@ -9,7 +9,7 @@ if not cap.isOpened():
 
 # Idea is to capture the 300th frame and save it as .jpg 
 #Loop the first 300 frames
-whichFrame = 220
+whichFrame = 190
 for i in range(whichFrame):
     ret, frame = cap.read()
     if not ret:

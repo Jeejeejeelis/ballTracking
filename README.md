@@ -1,8 +1,10 @@
-working on ballTracking.py
+# Ball Tracking
 
-next steps:
-    start video when the rally has started!
-    try to make better ball detection with current filters.
-    add HSV filter to look for ball color for additional detection.
-        if circle detected, then ball should be green.
-# ballTracking
+Working on `ballTracking.py`.
+
+## Next Steps
+
+1. ~~Start video when the rally has started!~~
+2. Try to make better ball detection with current filters.
+3. Add HSV filter to look for ball color for additional detection.
+    - If circle detected, then ball should be green.
