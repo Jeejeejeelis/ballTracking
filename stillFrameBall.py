@@ -113,7 +113,7 @@ def main(argv):
     print(cv.__version__)
     src = openFile(argv)
 
-    mask = tennisballMask(src)
+    #mask = tennisballMask(src)
 
     # Increase contrast
     alpha = 1.5  # Contrast control (1.0-3.0)

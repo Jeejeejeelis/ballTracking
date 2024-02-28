@@ -40,20 +40,39 @@ def houghCircleTransform(frame, dp, min_dist, param1, param2, min_rad, max_rad):
                                minRadius=1, maxRadius=30)
     return circles
 
-def drawCircles(frame1, frame2, circles):
+def drawCircles(frame, circles):
     if circles is not None:
-        print("Circles detected at")
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
             print(f"Circle found at ({i[0]}, {i[1]}) with radius {i[2]}")
             center = (i[0], i[1])
             # circle center
-            cv.circle(frame1, center, 1, (0, 100, 100), 3)
-            cv.circle(frame2, center, 1, (0, 100, 100), 3)
+            cv.circle(frame, center, 1, (0, 100, 100), 3)
             # circle outline
             radius = i[2]
-            cv.circle(frame1, center, radius, (255, 0, 255), 3)
-            cv.circle(frame2, center, radius, (255, 0, 255), 3)
+            cv.circle(frame, center, radius, (255, 0, 255), 3)
+
+def tennisballMask(src):
+    # Convert BGR to HSV
+    hsv = cv.cvtColor(src, cv.COLOR_BGR2HSV)
+
+    # #convert GIMP values to opencv values straight away!
+    min_hue = 67.1 / 2
+    min_saturation = 16.1 *2.55
+    min_value = 34.4 * 2.55
+    max_hue = 155 / 2
+    max_saturation = 60 *2.55
+    max_value = 100 * 2.55
+
+    # Define range for tennis ball color in HSV
+    lower_green = np.array([min_hue, min_saturation, min_value])
+    upper_green = np.array([max_hue, max_saturation, max_value])
+
+    # Threshold the HSV image to get only green colors
+    mask = cv.inRange(hsv, lower_green, upper_green)
+
+    return mask
+
 def main(argv):
     # Open the video
     src = openFile(argv)
@@ -66,18 +85,47 @@ def main(argv):
     end_frame = int(fps * 30)  # 30 seconds
 
     current_frame = start_frame
+
+    #convert GIMP values to opencv values straight away!
+    # Define range for tennis ball color in HSV
     
     while(src.isOpened()):
         ret, frame = src.read()
         if ret:
+            # Increase contrast
+            alpha = 1.5  # Contrast control (1.0-3.0)
+            beta = 0  # Brightness control (0-100)
+            contrasted_frame = cv.convertScaleAbs(frame, alpha=alpha, beta=beta)
+
+            # Apply noise reduction
+            denoised_frame = cv.fastNlMeansDenoisingColored(contrasted_frame, None, 10, 10, 7, 21)
             
             # This bilateral filter makes all the difference for tennis ball detection.
-            frame2 = cv.bilateralFilter(frame, 15, 1000, 1000);
+            frame2 = cv.bilateralFilter(denoised_frame, 15, 1000, 1000)
+            
+            #Create mask based on tennisball HSV values
+            mask = tennisballMask(frame)
 
             grayFrame = cv.cvtColor(frame2, cv.COLOR_BGR2GRAY)
+
+
+            # Define the sharpening kernel
+            # kernel = np.array([[0, -1, 0],
+            #                [-1, 5,-1],
+            #                [0, -1, 0]])
+            
+            kernel = np.array([[-1, -1, -1],
+                        [-1,  9, -1],
+                        [-1, -1, -1]])
+            
+            # Apply the kernel to the grayscale and mask image using the filter2D function
+            sharpenedGray = cv.filter2D(grayFrame, -1, kernel)
+            sharpenedMask = cv.filter2D(mask, -1, kernel)
+            
             # Gaussian blur another option to medianBlur!
             # Blur used to reduce noise and avoid false circle detection!
             grayFrame= cv.medianBlur(grayFrame,5)
+            mask= cv.GaussianBlur(sharpenedMask, (5, 5), 0)
 
             rows = grayFrame.shape[0] #grayframe height resolution!
             columns = grayFrame.shape[1]#grayframe width resolution!
@@ -89,11 +137,17 @@ def main(argv):
             param2 = 30
             min_rad = 1
             max_rad = 30
-            circles = houghCircleTransform(grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
-            drawCircles(frame2, grayFrame, circles)
+            circlesGrayFrame = houghCircleTransform(grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
+            circlesMask = houghCircleTransform(mask, dp, min_dist, param1, param2, min_rad, max_rad)
+            
+            print("grayFrame circles: ")
+            #drawCircles(grayFrame,  circlesGrayFrame)
+            drawCircles(frame,circlesMask)
 
-            cv.imshow('detected balls', frame2)
-            cv.imshow("grayFrame circles", grayFrame)
+                #display detected circles!
+            cv.imshow("detected circles", frame)
+            #cv.imshow("grayFrame circles", grayFrame)
+            #cv.imshow("mask", mask)
             if cv.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
