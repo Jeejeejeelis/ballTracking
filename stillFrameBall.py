@@ -65,21 +65,47 @@ def tennisballMask(src):
     mask = cv.inRange(hsv, lower_green, upper_green)
 
     # Define the kernel size for morphological operations
-    kernel = np.ones((5,5),np.uint8)
-
+    # kernel = np.ones((5,5),np.uint8)
+    #use a disk structuring element instead!
+    disk = cv.getStructuringElement(cv.MORPH_ELLIPSE, (40,40))
     # # Perform erosion
     # erosion = cv.erode(mask, kernel, iterations = 1)
     # # Perform dilation
     # dilation = cv.dilate(erosion, kernel, iterations = 1)
 
     # Perform morphological operations
-    opening = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
+    opening = cv.morphologyEx(mask, cv.MORPH_OPEN, disk)
     # Perform closing. Useful in closing small holes or dark spots within the object.
-    closing = cv.morphologyEx(opening, cv.MORPH_CLOSE, kernel)
+    closing = cv.morphologyEx(opening, cv.MORPH_CLOSE, disk)
     # Blur the image
     blurred = cv.GaussianBlur(closing, (5, 5), 0)
 
-    return blurred
+    #HoughCircles expects hollow ball so find edges of the mask!
+    #minVal and maxVal for the hysteresis procedure.
+    # If a pixel gradient value is below minVal, it is considered not to be an edge.
+    # If the pixel gradient is between minVal and maxVal, it is accepted as an edge 
+    # only if it is connected to a pixel with a gradient value more than maxVal
+
+    edges = cv.Canny(blurred, 50, 150)
+
+    # Find contours in the edge image
+    contours, _ = cv.findContours(edges.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Calculate the perimeter of each contour
+    perimeters = [cv.arcLength(contour, True) for contour in contours]
+
+    # Draw a circle around each contour
+    # for contour in contours:
+    #     # Calculate the center and radius of the minimum enclosing circle
+    #     (x, y), radius = cv.minEnclosingCircle(contour)
+    #     center = (int(x), int(y))
+    #     radius = int(radius)
+
+    #     # Draw the circle on the source image
+    #     cv.circle(src, center, radius, (0, 255, 0), 2)
+
+
+    return edges
     
 
 def main(argv):
@@ -175,9 +201,10 @@ def main(argv):
     print("grayFrame circles: ")
     drawCircles(grayFrame,  circlesGrayFrame)
     print("Mask circles: ")
-    drawCircles(mask, circlesMask)
+    # i cant see the circles in the mask so why bother!
+    #drawCircles(mask, circlesMask)
     ## Use code below to draw circles into src frame.
-    # drawCircles(src,circlesMask)
+    drawCircles(src,circlesMask)
     # drawCircles(src,circlesGrayFrame)
 
     #display detected circles!
