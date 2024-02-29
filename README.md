@@ -15,4 +15,7 @@ Working on `ballTracking.py`.
 
 3. Add HSV filter to look for ball color for additional detection.
     - If circle detected, then ball should be green.
+
 4. HoughCircle expects hollow circle -> hollow my masked ball by finding the perimeters of it!
+
+5. My HoughLines is not working correctly... Or the draw function...

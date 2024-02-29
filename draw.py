@@ -18,7 +18,7 @@ def drawSquares(frame, centers, colors, color):
     if centers is not None:
         centers = np.uint16(np.around(centers))
         for i in centers:
-            print(f"Approximate circle found at ({i[0]}, {i[1]})")
+            #print(f"Approximate circle found at ({i[0]}, {i[1]})")
             center = (i[0], i[1])
             # Define the size of the square
             size = 20  # Adjust this value as needed
@@ -27,3 +27,17 @@ def drawSquares(frame, centers, colors, color):
             bottom_right = (center[0] + size, center[1] + size)
             # Draw the square
             cv.rectangle(frame, top_left, bottom_right, colors.get(color), 2)
+
+def drawLines(frame, lines,colors, color):
+     if lines is not None:
+        for rho, theta in lines[:, 0]:
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            x1 = int(x0 + 1000 * (-b))
+            y1 = int(y0 + 1000 * (a))
+            x2 = int(x0 - 1000 * (-b))
+            y2 = int(y0 - 1000 * (a))
+
+            cv.line(frame, (x1, y1), (x2, y2), colors.get(color), 2)

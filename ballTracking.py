@@ -2,9 +2,10 @@ import sys
 import cv2 as cv
 import numpy as np
 from color import Color
-from draw import drawCircles, drawSquares
-from detect import houghCircleTransform, findApproxCirclesFromMask
-from mask import tennisballMask
+from draw import drawCircles, drawSquares, drawLines
+from detect import houghCircleTransform, findApproxCirclesFromMask, findLines
+from mask import tennisballMask, courtLinesMask
+from calibrationMask import *
 
 def openFile(argv):
     #import default video or specified file from terminal command
@@ -33,6 +34,10 @@ def main(argv):
     src = openFile(argv)
     color_instance = Color()
 
+    # create mask of lines from our calibration image.
+    lineMask = create_calibrationMask()
+    courtLines = findLines(lineMask)
+
     # Set the starting point to 3 seconds
     fps = src.get(cv.CAP_PROP_FPS)
     start_frame = int(fps * 3)  # 3 seconds
@@ -48,7 +53,8 @@ def main(argv):
     while(src.isOpened()):
         ret, frame = src.read()
         if ret:
-
+            #print current frame!
+            print(f"Processing frame: {src.get(cv.CAP_PROP_POS_FRAMES)}")
             # Apply noise reduction
             denoised_frame = cv.fastNlMeansDenoisingColored(frame, None, 10, 10, 7, 21)
             
@@ -57,7 +63,7 @@ def main(argv):
             beta = 0  # Brightness control (0-100)
             contrasted_frame = cv.convertScaleAbs(denoised_frame, alpha=alpha, beta=beta)
 
-            # This bilateral filter makes all the difference for tennis ball detection.
+            # This bilateral filter makes all the difference for tennis ball detection in grayscale.
             # src: Source image.
             # d: Diameter of each pixel neighborhood that is used during filtering. If it is non-positive, it is computed from sigmaSpace.
             # sigmaColor: Filter sigma in the color space. A larger value of the parameter means that farther colors within the pixel neighborhood
@@ -66,11 +72,6 @@ def main(argv):
             # as long as their colors are close enough. When d>0, it specifies the neighborhood size regardless of sigmaSpace. Otherwise, d is proportional to sigmaSpace.
             # src2 = cv.bilateralFilter(src, 15, 1000, 1000); # original
             frame2 = cv.bilateralFilter(contrasted_frame, 15, 1000, 1000)
-
-            # Define the sharpening kernel
-            # kernel = np.array([[0, -1, 0],
-            #                [-1, 5,-1],
-            #                [0, -1, 0]])
             
             kernel = np.array([[-1, -1, -1],
                         [-1,  9, -1],
@@ -80,14 +81,22 @@ def main(argv):
             sharpened = cv.filter2D(frame2, -1, kernel)
             
             #Create mask based on tennisball HSV values. Use original frame, filtering made it worse.
-            mask = tennisballMask(frame)
+            # # Testing larger range!
+            min_hue = 50
+            min_saturation = 10
+            min_value = 20
+            max_hue = 170
+            max_saturation = 100
+            max_value = 100
+            ballMask = tennisballMask(frame, min_hue, min_saturation, min_value,max_hue,max_saturation,max_value)
+            
+            
             #create a gray frame. Try with sharpened aswell!
-            grayFrame = cv.cvtColor(frame2, cv.COLOR_BGR2GRAY)
+            grayFrame = cv.cvtColor(sharpened, cv.COLOR_BGR2GRAY)
 
             #Testing gaussianBlur omstead of median blur to preserve edges
             #(width, height) Both numbers should be positive and odd. 
-            blurred_grayFrame = cv.GaussianBlur(grayFrame, (5, 5), 0)
-            #mask= cv.GaussianBlur(mask, (5, 5), 0)
+            blurred_grayFrame = cv.GaussianBlur(grayFrame, (3, 3), 0)
 
             rows = grayFrame.shape[0] #grayframe height resolution!
             columns = grayFrame.shape[1]#grayframe width resolution!
@@ -99,20 +108,22 @@ def main(argv):
             param2 = 30
             min_rad = 1
             max_rad = 30
-            circlesMask = houghCircleTransform(mask, dp, min_dist, param1, param2, min_rad, max_rad)
-            approxCirclesMask = findApproxCirclesFromMask(mask, 0.25)
+            circlesMask = houghCircleTransform(ballMask, dp, min_dist, param1, param2, min_rad, max_rad)
+            approxCirclesMask = findApproxCirclesFromMask(ballMask, 0.25)
             circlesGrayFrame = houghCircleTransform(blurred_grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
             approxCirclesGrayFrame = findApproxCirclesFromMask(blurred_grayFrame, 0.25)
             drawCircles(frame, circlesGrayFrame,color_instance,"gray")
             drawSquares(frame, approxCirclesGrayFrame,color_instance,"gray")
             drawCircles(frame, circlesMask,color_instance,"green")
             drawSquares(frame, approxCirclesMask,color_instance,"green")
+            drawLines(frame, courtLines, color_instance, "red")
 
             #display detected circles!
             cv.imshow("original", frame)
-            cv.moveWindow("grayFrame", 0, 0)
-            cv.imshow("mask", mask)
-            cv.moveWindow("mask", frame.shape[0], 0)
+            #cv.moveWindow("grayFrame", 0, 0)
+            cv.imshow("linemask", lineMask)
+            cv.imshow("ballmask", ballMask)
+            cv.moveWindow("ballmask", frame.shape[0], 0)
             #cv.imshow("grayFrame circles", grayFrame)
             
             if cv.waitKey(1) & 0xFF == ord('q'):

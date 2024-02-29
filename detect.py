@@ -39,3 +39,15 @@ def findApproxCirclesFromMask(frame, margin):
             # Add its center to the list
             centers.append((int(x), int(y)))
     return centers
+
+def findLines(frame):
+    # Apply edge detection
+    edges = cv.Canny(frame, 50, 150)
+
+    # Use Hough Line Transform to detect lines
+    # The arguments are the binarized image, rho, theta and the threshold
+    # rho: Distance resolution of the accumulator in pixels.
+    # theta: Angle resolution of the accumulator in radians.
+    # threshold: Accumulator threshold parameter. Only those lines are returned that get enough votes (> `threshold`).
+    lines = cv.HoughLines(edges, 1, np.pi/180, 200)
+    return lines
