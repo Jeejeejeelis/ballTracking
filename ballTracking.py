@@ -1,6 +1,10 @@
 import sys
 import cv2 as cv
 import numpy as np
+from color import Color
+from draw import drawCircles, drawSquares
+from detect import houghCircleTransform, findApproxCirclesFromMask
+from mask import tennisballMask
 
 def openFile(argv):
     #import default video or specified file from terminal command
@@ -22,112 +26,12 @@ def openFile(argv):
         print(f"The resolution of the video is {int(resolution_width)}x{int(resolution_height)} pixels.")
     
     return src
-
-def houghCircleTransform(frame, dp, min_dist, param1, param2, min_rad, max_rad):
-    #Apply Hough Circle Transform
-    # grayFrame: Input image (grayscale).
-    # circles: A vector that stores sets of 3 values: xc,yc,r for each detected circle.
-    # HOUGH_GRADIENT: Define the detection method. Currently this is the only one available in OpenCV.
-    # dp = 1: The inverse ratio of resolution.
-    # min_dist = gray.rows/16: Minimum distance between detected centers.
-    # param_1 = 200: Upper threshold for the internal Canny edge detector.
-    # param_2 = 100*: Threshold for center detection.
-    # min_radius = 0: Minimum radius to be detected. If unknown, put zero as default.
-    # max_radius = 0: Maximum radius to be detected. If unknown, put zero as default.
-    
-    circles = cv.HoughCircles(frame, cv.HOUGH_GRADIENT, 1, min_dist,
-                               param1=100, param2=30,
-                               minRadius=1, maxRadius=30)
-    return circles
-
-def drawCircles(frame, circles):
-    if circles is not None:
-        circles = np.uint16(np.around(circles))
-        for i in circles[0, :]:
-            print(f"Circle found at ({i[0]}, {i[1]}) with radius {i[2]}")
-            center = (i[0], i[1])
-            # circle center
-            cv.circle(frame, center, 1, (0, 100, 100), 3)
-            # circle outline
-            radius = i[2]
-            cv.circle(frame, center, radius, (255, 0, 255), 3)
-
-def drawSquares(frame, centers):
-    if centers is not None:
-        centers = np.uint16(np.around(centers))
-        for i in centers:
-            print(f"Approximate circle found at ({i[0]}, {i[1]})")
-            center = (i[0], i[1])
-            # Define the size of the square
-            size = 20  # Adjust this value as needed
-            # Define the top-left and bottom-right points of the square
-            top_left = (center[0] - size, center[1] - size)
-            bottom_right = (center[0] + size, center[1] + size)
-            # Draw the square
-            cv.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
-
-def findApproxCirclesFromMask(mask):
-     # Find contours in the mask
-    contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    # List to store the centers of the circular contours
-    centers = []
-
-    for contour in contours:
-        # Calculate the area of the contour
-        area = cv.contourArea(contour)
-
-        # Calculate the area of the minimum enclosing circle
-        (x, y), radius = cv.minEnclosingCircle(contour)
-        circle_area = np.pi * (radius ** 2)
-
-        # If the two areas are approximately equal, the contour is likely to be circular
-        if np.isclose(area, circle_area, rtol=0.25):
-            # This contour is approximately circular!
-            # Add its center to the list
-            centers.append((int(x), int(y)))
-    return centers
            
-def tennisballMask(src):
-    # Convert BGR to HSV
-    hsv = cv.cvtColor(src, cv.COLOR_BGR2HSV)
-
-    # #convert GIMP values to opencv values straight away!
-    min_hue = 67.1 / 2
-    min_saturation = 16.1 *2.55
-    min_value = 34.4 * 2.55
-    max_hue = 155 / 2
-    max_saturation = 60 *2.55
-    max_value = 100 * 2.55
-
-    # Define range for tennis ball color in HSV
-    lower_green = np.array([min_hue, min_saturation, min_value])
-    upper_green = np.array([max_hue, max_saturation, max_value])
-
-    # Threshold the HSV image to get only green colors
-    mask = cv.inRange(hsv, lower_green, upper_green)
-
-    # Define the kernel size for morphological operations
-    # kernel = np.ones((5,5),np.uint8)
-    #use a disk structuring element instead! Try out different values! 4 was too much
-    disk = cv.getStructuringElement(cv.MORPH_ELLIPSE, (2,2))
-    # # Perform erosion
-    # erosion = cv.erode(mask, kernel, iterations = 1)
-    # # Perform dilation
-    # dilation = cv.dilate(erosion, kernel, iterations = 1)
-
-    # Perform morphological operations
-    opening = cv.morphologyEx(mask, cv.MORPH_OPEN, disk)
-    # Perform closing. Useful in closing small holes or dark spots within the object.
-    closing = cv.morphologyEx(opening, cv.MORPH_CLOSE, disk)
-    # Blur the image
-    #blurred = cv.GaussianBlur(closing, (5, 5), 0)
-
-    return closing
 
 def main(argv):
     # Open the video
     src = openFile(argv)
+    color_instance = Color()
 
     # Set the starting point to 3 seconds
     fps = src.get(cv.CAP_PROP_FPS)
@@ -177,8 +81,8 @@ def main(argv):
             
             #Create mask based on tennisball HSV values. Use original frame, filtering made it worse.
             mask = tennisballMask(frame)
-            #create a gray frame
-            grayFrame = cv.cvtColor(sharpened, cv.COLOR_BGR2GRAY)
+            #create a gray frame. Try with sharpened aswell!
+            grayFrame = cv.cvtColor(frame2, cv.COLOR_BGR2GRAY)
 
             #Testing gaussianBlur omstead of median blur to preserve edges
             #(width, height) Both numbers should be positive and odd. 
@@ -195,14 +99,14 @@ def main(argv):
             param2 = 30
             min_rad = 1
             max_rad = 30
-            #circlesGrayFrame = houghCircleTransform(blurred_grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
             circlesMask = houghCircleTransform(mask, dp, min_dist, param1, param2, min_rad, max_rad)
-            approxCirclesMask = findApproxCirclesFromMask(mask)
+            approxCirclesMask = findApproxCirclesFromMask(mask, 0.25)
             circlesGrayFrame = houghCircleTransform(blurred_grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
-            #print("grayFrame circles: ")
-            drawCircles(frame, circlesGrayFrame)
-            drawCircles(frame, circlesMask)
-            drawSquares(frame, approxCirclesMask)
+            approxCirclesGrayFrame = findApproxCirclesFromMask(blurred_grayFrame, 0.25)
+            drawCircles(frame, circlesGrayFrame,color_instance,"gray")
+            drawSquares(frame, approxCirclesGrayFrame,color_instance,"gray")
+            drawCircles(frame, circlesMask,color_instance,"green")
+            drawSquares(frame, approxCirclesMask,color_instance,"green")
 
             #display detected circles!
             cv.imshow("original", frame)
