@@ -40,14 +40,44 @@ def findApproxCirclesFromMask(frame, margin):
             centers.append((int(x), int(y)))
     return centers
 
+# def average_lines(lines, frame):
+#     if lines is None:
+#         return None
+
+#     # Calculate the slopes and intercepts of the lines
+#     slopes = [(y2 - y1) / (x2 - x1) if (x2-x1) else 0 for x1, y1, x2, y2 in lines[:, 0]]
+#     intercepts = [y1 - slope * x1 for (x1, y1, _, _), slope in zip(lines[:, 0], slopes)]
+
+#     # Average the slopes and intercepts
+#     avg_slope = sum(slopes) / len(slopes) if slopes else 0
+#     avg_intercept = sum(intercepts) / len(intercepts) if intercepts else 0
+
+#     # Calculate the start and end points of the average line
+#     x1 = 0
+#     y1 = int(avg_intercept)
+#     x2 = frame.shape[1]
+#     y2 = int(avg_slope * x2 + avg_intercept)
+
+#     return np.array([[x1, y1, x2, y2]])
+
+
 def findLines(frame):
-    # Apply edge detection
-    edges = cv.Canny(frame, 50, 150)
+    # Apply edge detection, If i find too many lines make second input 150 or more!
+    edges = cv.Canny(frame, 20, 100)
 
     # Use Hough Line Transform to detect lines
     # The arguments are the binarized image, rho, theta and the threshold
     # rho: Distance resolution of the accumulator in pixels.
     # theta: Angle resolution of the accumulator in radians.
     # threshold: Accumulator threshold parameter. Only those lines are returned that get enough votes (> `threshold`).
-    lines = cv.HoughLines(edges, 1, np.pi/180, 200)
+    #lines = cv.HoughLines(edges, 1, np.pi/180, 200)
+
+
+    # edges: This is the output of an edge detection operation (like cv.Canny()). It’s a binary image where edges are white and the rest is black.
+    # 1: This is the resolution of the parameter r in pixels. r is the distance resolution from the origin to the detected line in the accumulator.
+    # np.pi/180: This is the resolution of the parameter θ in radians. θ is the angle resolution of the detected line in the accumulator.
+    # 100: This is the threshold parameter. Only those lines are returned that get enough votes (>100).
+    # minLineLength=100: This is the minimum line length. Line segments shorter than this are rejected.
+    # maxLineGap=10: This is the maximum allowed gap between line segments lying on the same line to treat them as a single line.
+    lines = cv.HoughLinesP(edges, 1, np.pi/180, 75, minLineLength=100, maxLineGap=50)
     return lines

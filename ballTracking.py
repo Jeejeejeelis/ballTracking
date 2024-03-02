@@ -35,8 +35,9 @@ def main(argv):
     color_instance = Color()
 
     # create mask of lines from our calibration image.
-    lineMask = create_calibrationMask()
-    courtLines = findLines(lineMask)
+    #I am not getting nice results with the lines.
+    # lineMask = create_calibrationMask()
+    # courtLines = findLines(lineMask)
 
     # Set the starting point to 3 seconds
     fps = src.get(cv.CAP_PROP_FPS)
@@ -116,7 +117,8 @@ def main(argv):
             drawSquares(frame, approxCirclesGrayFrame,color_instance,"gray")
             drawCircles(frame, circlesMask,color_instance,"green")
             drawSquares(frame, approxCirclesMask,color_instance,"green")
-            drawLines(frame, courtLines, color_instance, "red")
+            # The lines are not returning nice result...
+            #drawLines(frame, courtLines, color_instance, "red")
 
             #display detected circles!
             cv.imshow("original", frame)
