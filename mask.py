@@ -53,15 +53,4 @@ def courtLinesMask(src,min_hue,min_saturation,min_value,max_hue,max_saturation,m
     # Threshold the HSV image to get only green colors
     mask = cv.inRange(hsv, lower_color, upper_color)
 
-    #erode mask for easier line detection!
-    # kernel = np.ones((2,2),np.uint8)
-    # eroded_mask = cv.erode(mask, kernel, iterations = 1)
-    #blurred_mask = cv.GaussianBlur(mask, (5, 5), 0)
-    # Define a sharpening kernel
-    kernel = np.array([[0, -1, 0],
-                    [-1, 5,-1],
-                    [0, -1, 0]])
-
-    sharpened = cv.filter2D(mask, -1, kernel)
-
-    return sharpened
+    return mask
