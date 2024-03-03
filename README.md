@@ -1,6 +1,6 @@
-# Ball Tracking with YOLOv8
+# Ball Tracking with YOLOv8 and OpenCV
 
-This project is designed to track balls in real-time using the state-of-the-art object detection model, YOLOv8.
+This project is designed to track balls using the state-of-the-art object detection model, YOLOv8, and the computer vision library, OpenCV.
 
 ## Table of Contents
 1. Dependencies
@@ -8,6 +8,7 @@ This project is designed to track balls in real-time using the state-of-the-art 
 3. Installation
 4. Usage
 5. Contributing
+6. License
 
 ## Dependencies
 
@@ -37,3 +38,7 @@ To be provided...
 ## Contributing
 
 Eelis Pinomaa
+
+## License
+
+This project is licensed under the AGPL-3.0 License. The use of the Ultralytics YOLOv8 library is governed by this license.
