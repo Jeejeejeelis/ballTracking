@@ -9,3 +9,5 @@ yolov8n.pt
 frame.jpg
 testballTracking.py
 output.mp4
+.~lock.ballTrackingReport
+ballTrackingReport.docx

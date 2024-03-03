@@ -124,8 +124,8 @@ def main(argv):
             #circlesGrayFrame = houghCircleTransform(blurred_grayFrame, dp, min_dist, param1, param2, min_rad, max_rad)
             #approxCirclesGrayFrame = findApproxCirclesFromMask(ballMask, 0.25)
             #drawCircles(frame, circlesGrayFrame,color_instance,"gray")
-            drawRectangles(frame, detectedObjects, color_instance, "red")
-            drawCircles(frame, approxCirclesMask,color_instance,"green")
+            drawRectangles(frame, detectedObjects, color_instance, "green")
+            drawCircles(frame, approxCirclesMask,color_instance,"red")
             #drawRectangles(frame, approxCirclesMask,color_instance,"green")
             # The lines are not returning nice result...
             #drawLines(frame, courtLines, color_instance, "red")
