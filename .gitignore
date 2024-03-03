@@ -7,3 +7,5 @@ calibrateHSV.xcf
 yolov8x-oiv7.pt
 yolov8n.pt
 frame.jpg
+testballTracking.py
+output.mp4

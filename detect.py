@@ -1,5 +1,7 @@
 import cv2 as cv
 import numpy as np
+import torch
+from ultralytics import YOLO
 
 def houghCircleTransform(frame, dp, min_dist, param1, param2, min_rad, max_rad):
     #Apply Hough Circle Transform
@@ -23,7 +25,7 @@ def findApproxCirclesFromMask(frame, margin):
     contours, _ = cv.findContours(frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     # List to store the centers of the circular contours
-    centers = []
+    circles = []
 
     for contour in contours:
         # Calculate the area of the contour
@@ -37,8 +39,8 @@ def findApproxCirclesFromMask(frame, margin):
         if np.isclose(area, circle_area, rtol=margin):
             # This contour is approximately circular!
             # Add its center to the list
-            centers.append((int(x), int(y)))
-    return centers
+            circles.append((int(x), int(y), radius))
+    return circles
 
 # def average_lines(lines, frame):
 #     if lines is None:
@@ -81,3 +83,18 @@ def findLines(frame):
     # maxLineGap=10: This is the maximum allowed gap between line segments lying on the same line to treat them as a single line.
     lines = cv.HoughLinesP(edges, 1, np.pi/180, 75, minLineLength=100, maxLineGap=50)
     return lines
+
+def yoloDetect(model, results):
+    detectedObjects = []  #Store detected objects
+
+    for result in results:
+        for detection in result.boxes.data:
+            box = detection[:4]  # Bounding box coordinates
+            score = detection[4]  # Confidence score
+            class_id = detection[5]  # Class ID
+            # Check if the label is for a tennis racket
+            if model.names[int(class_id)] == 'Tennis racket':
+                # Add the bounding box to the list
+                detectedObjects.append(box)
+
+    return detectedObjects

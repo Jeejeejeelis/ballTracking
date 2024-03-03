@@ -2,31 +2,23 @@ import cv2 as cv
 from color import Color
 import numpy as np
 
-def drawCircles(frame, circles,colors, color):
+def drawCircles(frame, circles, colors, color):
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        for i in circles[0, :]:
+        for i in circles:
             print(f"Circle found at ({i[0]}, {i[1]}) with radius {i[2]}")
             center = (i[0], i[1])
             # circle center
-            cv.circle(frame, center, 1,colors.get(color), 3)
+            cv.circle(frame, center, 1, colors.get(color), 3)
             # circle outline
             radius = i[2]
             cv.circle(frame, center, radius, colors.get(color), 3)
 
-def drawSquares(frame, centers, colors, color):
-    if centers is not None:
-        centers = np.uint16(np.around(centers))
-        for i in centers:
-            #print(f"Approximate circle found at ({i[0]}, {i[1]})")
-            center = (i[0], i[1])
-            # Define the size of the square
-            size = 20  # Adjust this value as needed
-            # Define the top-left and bottom-right points of the square
-            top_left = (center[0] - size, center[1] - size)
-            bottom_right = (center[0] + size, center[1] + size)
-            # Draw the square
-            cv.rectangle(frame, top_left, bottom_right, colors.get(color), 2)
+def drawRectangles(frame, boxes, colors, color):
+    if boxes is not None:
+        for box in boxes:
+            # Draw a rectangle around the detected object
+            cv.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), colors.get(color), 2)
 
 
 def drawLines(frame, lines, colors, color):
